@@ -23,7 +23,10 @@ if(isset($_GET['start']))
 
 if(isset($_GET['find_companion']))
 {
-	echo getCompanion();
+	if(empty($_SESSION["user_id"])){
+		$_SESSION["user_id"] = -1;
+	}
+	echo getCompanion($_SESSION['user_id']);
 }
 
 
@@ -36,15 +39,50 @@ if(isset($_GET['update_user_status']))
 	
 	mySQLQuery($query);
 }
-
-function getCompanion()
+/**
+* @param int $id
+* @return string
+*/
+function getCompanion($id)
 {
 	$query = "SELECT ip FROM ".DB_TABLE." WHERE id!=".$id;
 	$companion = mySQLQuery($query);
-
+	$needle = $companion[array_rand($companion)];
 	//TODO: здесь сделать отсев по ip из черного списка юзера
-
-	return $companion[rand(0,count($companion)-1)];
+	$blackList = getUserBlackList($id);
+	if(!array_search($needle["ip"], $blackList)){
+		return $needle;
+	}
+	return getCompanion($id);
+}
+/**
+* @param int $userId
+* @return array
+*/
+function getUserBlackList($userId)
+{
+	$query = "SELECT blacklist FROM `%s` WHERE `id` != %d";
+	$blackList = mySQLQuery(sprintf($query, DB_TABLE, $userId))
+	return unserialize($blackList);
+}
+/**
+* Добавление ip в черный список
+* @param int $userId
+* @param string $ipAddress 
+* @return bool
+*/
+function addToBlackList($userId, $ipAddress)
+{
+	$blackList = getUserBlackList($userId);
+	$key = 0;
+	while($ip = $blackList[$key]){
+		if($ip == $ipAddress){
+			return false;
+		}
+	}
+	$blackList[] = $ipAddress;
+	$query = "UPDATE `%s` SET blacklist='%s' WHERE id=%d";
+	return (boolean)mySQLQuery(sprintf($query, DB_TABLE, serialize($blackList), $userId));
 }
 
 function generateBroadcasterKey()
