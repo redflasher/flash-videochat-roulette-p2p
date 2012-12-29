@@ -63,7 +63,7 @@ function getUserBlackList($userId)
 {
 	$query = "SELECT blacklist FROM `%s` WHERE `id` != %d";
 	$blackList = mySQLQuery(sprintf($query, DB_TABLE, $userId))
-	return unserialize($blackList);
+	return unserialize($blackList["blacklist"]);
 }
 /**
 * Добавление ip в черный список
