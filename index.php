@@ -18,16 +18,16 @@
 			params.allownetworking = "all";
 
 		var attributes = {};
-		swfobject.embedSWF("rulet.swf", "myflash", "800", "300", "10.3.0", "playerProductInstall.swf", flashvars, params, attributes );
+		swfobject.embedSWF("flash/rulet.swf", "myflash", "800", "300", "10.3.0", "playerProductInstall.swf", flashvars, params, attributes );
 	</script>
 </head>
 
 <body> 
 
-<center>
+
 <div id="myflash"> 
 </div>
-</center>
+
  
    
 </body> 

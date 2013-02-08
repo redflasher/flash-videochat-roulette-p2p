@@ -1,37 +1,55 @@
 <?php
 
-
-	////config////
+	////конфигурация базы данных MySQL////
 	const DB_NAME = "chat_p2p";
 	const DB_TABLE = "users";
 	const DB_USER_NAME = "root";
 	const DB_PASSWORD = "";
-	/////////////
+	//////////////////////////////////////
 
- if(! isset($_SESSION) )session_start();
+//запускаем сессию - чтобы можно было сохранить user_id при первом запросе к серверу
+//и затем иметь возможность его использовать при последующих запросах
+session_start();
 
-
+//это вызывается из флеш, путем передачи get-параметра start
+//
 if(isset($_GET['start']))
 {
-	$_SESSION['user_id'] = getUser();
+	//получаем user_id уже существующего пользователя("авторизация" по ip), либо создаем нового (в БД) 
+	$_SESSION['user_id']=getUser();
 
+	//генерируем md5-хэш и записываем его в БД как адрес исходящего от нас потока
 	generateBroadcasterKey();
 
+	//берем из БД и возвращем флешу сгенерированный в предыдущей функции адрес исходящего потока
 	echo getBroadcasterKey();
 }
 
 
+//во флеше нажали "поиск собеседника"
 if(isset($_GET['find_companion']))
 {
+	//если сессия не начата, то возвращаем информацию о неудачной попытке поиска 
+	//(во флеш это сейчас не обрабатывается)
 	if(empty($_SESSION["user_id"])){
-		$_SESSION["user_id"] = -1;
+		return "fail";
 	}
-	echo getCompanion($_SESSION['user_id']);
+	//если сессия была успешно начата, то получаем из её массива user_id
+	//и используем его для поиска собеседника
+
+	//получаем адреса потоков всех доступных собеседников
+	$companion_key = getCompanion( $_SESSION['user_id'] );
+
+	//и отправляем во флеш случайного собеседника из списка
+	echo $companion_key[rand(0,count($companion_key)-1)]['key_broadcaster'];
+	// var_dump($companion_key);
 }
 
 
 
 //перед вызовом сессия должна уже быть начата
+//этот вызов флеш делает регулярно, чтобы обновить свое время пребывания на сервере
+//по этому параметру мы сможем затем судить о том, онлайн ли пользователь или уже нет
 if(isset($_GET['update_user_status']))
 {
 	$id = $_SESSION['user_id'];
@@ -39,63 +57,33 @@ if(isset($_GET['update_user_status']))
 	
 	mySQLQuery($query);
 }
-/**
-* @param int $id
-* @return string
-*/
+
+
+
+/** получаем собеседника*/
 function getCompanion($id)
 {
-	$query = "SELECT ip FROM ".DB_TABLE." WHERE id!=".$id;
+	//получаем список ключей медиа-потоков пользователей, находящихся сейчас онлайн
+	$query = "SELECT key_broadcaster FROM ".DB_TABLE." WHERE id!=".$id." AND timestamp>".(string)(time()-5);
 	$companion = mySQLQuery($query);
-	$needle = $companion[array_rand($companion)];
-	//TODO: здесь сделать отсев по ip из черного списка юзера
-	$blackList = getUserBlackList($id);
-	if(!array_search($needle["ip"], $blackList)){
-		return $needle;
-	}
-	return getCompanion($id);
-}
-/**
-* @param int $userId
-* @return array
-*/
-function getUserBlackList($userId)
-{
-	$query = "SELECT blacklist FROM `%s` WHERE `id` = %d";
-	$query = sprintf($query, DB_TABLE, $userId);
-	$blackList = mySQLQuery($query);
-	return unserialize($blackList[0]["blacklist"]);
-}
-/**
-* Добавление ip в черный список
-* @param int $userId
-* @param string $ipAddress 
-* @return bool
-*/
-function addToBlackList($userId, $ipAddress)
-{
-	$blackList = getUserBlackList($userId);
-	$key = 0;
-	while($ip = $blackList[$key]){
-		if($ip == $ipAddress){
-			return false;
-		}
-	}
-	$blackList[] = $ipAddress;
-	$query = "UPDATE `%s` SET blacklist='%s' WHERE id=%d";
-	return (boolean)mySQLQuery(sprintf($query, DB_TABLE, serialize($blackList), $userId));
+	return $companion;
 }
 
+
+//генерируем ключ для исходящего медиа-потока. Эту функцию вызывает каждый юзер
+//функция вызывается каждый раз при подключении пользователя к видео-чату
 function generateBroadcasterKey()
 {
 	$b_key = md5(time());
 	$id = $_SESSION['user_id'];
+
 	$query = "UPDATE ".DB_TABLE." SET key_broadcaster='$b_key' WHERE id=$id";
 	mySQLQuery($query);
 
 	return $b_key;
 }
 
+//получаем свой ключ бродкастера из БД
 function getBroadcasterKey()
 {
 	$id = $_SESSION['user_id'];
@@ -106,13 +94,14 @@ function getBroadcasterKey()
 	return $b_key['key_broadcaster'];
 }
 
+
+//тут добавляем нового юзера, либо просто возвращаем ему его id
 function getUser()
 {
 	/* Выполняем SQL-запрос */
-	$ip = $_SERVER["REMOTE_ADDR"];
-
-	$query = "SELECT * FROM users WHERE ip='$ip'";
-	$data = mySQLQuery($query);
+	$ip = $_SERVER["REMOTE_ADDR"];//получаем свой ip
+	$query = "SELECT * FROM users WHERE ip='$ip'";//формируем запрос к БД
+	$data = mySQLQuery($query);//выполняем запрос и получаем ответ
 
 	$user_id;
 	//юзер уже есть в базе данных
@@ -138,6 +127,8 @@ function getUser()
 	return $user_id;
 }
 
+
+//функция для работы с БД
 function mySQLQuery($query_string)
 {
 	/* Соединяемся, выбираем базу данных */

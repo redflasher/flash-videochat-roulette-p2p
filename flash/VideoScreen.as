@@ -38,13 +38,10 @@ package
 		{
 
 			videoPlace.visible = false;//ok
-			videoMenu.visible = false;//ok
 			mouseChildren = true;//ok
 			down.downBoard.soundScroll.mouseEnabled = false;
 			down.downBoard.soundScroll.mouseChildren = false;
 			down.downBoard.soundBar.mouseEnabled = true;
-			videoMenu.mouseEnabled = true;
-			videoMenu.mouseChildren = true;
 			
 			//FIND BTN & START BTN
 			findBtn.visible = false;
@@ -82,12 +79,10 @@ package
 				if (_user.getSoundPlay())
 				{
 					_user.muteSound();
-					videoMenu.soundOffBtn.info.text = "Включить звук";
 				}
 				else
 				{
 					_user.unmuteSound();
-					videoMenu.soundOffBtn.info.text = "Отключить звук";
 				}
 			}
 		}
@@ -110,11 +105,9 @@ package
 			{
 				removeEventListener(MouseEvent.ROLL_OVER, showVideoMenu);
 				removeEventListener(MouseEvent.ROLL_OUT, hideVideoMenu);
-				videoMenu.visible = true;
 			}
 			else
 			{
-				videoMenu.visible = false;
 				addEventListener(MouseEvent.ROLL_OVER, showVideoMenu);
 				addEventListener(MouseEvent.ROLL_OUT, hideVideoMenu);
 			}
@@ -123,13 +116,11 @@ package
 		
 		private function showVideoMenu(e:MouseEvent):void 
 		{
-			up.gotoAndPlay(2);
 			down.gotoAndPlay(2);
 		}		
 		
 		private function hideVideoMenu(e:MouseEvent):void 
 		{
-			up.gotoAndPlay(11);
 			down.gotoAndPlay(11);
 		}
 		
@@ -137,18 +128,12 @@ package
 		private function removeListeners():void
 		{
 			//write('remove listeners for ' + screenNum +' screen');
-			down.downBoard.soundBar.removeEventListener(MouseEvent.CLICK, changeVolume);			
-			down.menuBtn.removeEventListener(MouseEvent.CLICK, showSettings);
+			down.downBoard.soundBar.removeEventListener(MouseEvent.CLICK, changeVolume);
 			removeEventListener(MouseEvent.ROLL_OVER, showVideoMenu);
 			removeEventListener(MouseEvent.ROLL_OUT, hideVideoMenu);
 			
-			videoMenu.videoOffBtn.removeEventListener(MouseEvent.CLICK, videoOff);
-			videoMenu.soundOffBtn.removeEventListener(MouseEvent.CLICK, soundOff);
-			
-			videoMenu.visible = false;
 			videoPlace.visible = false;
 			
-			up.visible = false;
 			down.visible = false;
 		}
 		
@@ -160,25 +145,12 @@ package
 			down.downBoard.soundBar.visible = true;
 			down.downBoard.soundScroll.visible = true;
 			
-			down.menuBtn.visible = false;
-			
-			videoMenu.soundOffBtn.info.mouseEnabled = false;
-			videoMenu.soundOffBtn.mouseChilden = false;
-			videoMenu.soundOffBtn.mouseEnabled = true;
-			videoMenu.soundOffBtn.buttonMode = true;
-			videoMenu.videoOffBtn.buttonMode = true;
-			
-			
-			videoMenu.videoOffBtn.addEventListener(MouseEvent.CLICK, videoOff);
-			videoMenu.soundOffBtn.addEventListener(MouseEvent.CLICK, soundOff);
-			down.menuBtn.addEventListener(MouseEvent.CLICK, showSettings);
 				
 			if (type == 'b')
 			{
 				down.downBoard.sndIcon.visible = false;
 				down.downBoard.soundBar.visible = false;
 				down.downBoard.soundScroll.visible = false;
-				down.menuBtn.visible = true;
 			}	
 			
 			addEventListener(MouseEvent.ROLL_OVER, showVideoMenu);
@@ -186,7 +158,6 @@ package
 			
 			videoPlace.visible = true;
 			
-			up.visible = true;
 			down.visible = true;
 		}
 		
@@ -198,7 +169,6 @@ package
 		
 		public function createFreeScreen():void
 		{
-			up.upBoard.info.text = '';
 			
 			if (_user != null)
 			{
@@ -221,6 +191,7 @@ package
 					//когда видео подключилось к сетевой группе - добавляем видео на экран
 					video_place = _user.getVideoScreen();
 					videoPlace.addChild ( video_place );
+					videoPlace.visible = true;
 				});
 			_user.addEventListener(ChatUser.VIDEO_CLOSE,
 				function()
@@ -241,9 +212,7 @@ package
 			installListeners('b');
 		}
 		public function createReceiver(r_key:String):void
-		{
-			up.upBoard.info.text = String(this.username);
-			
+		{	
 			if (_user != null)_user = null;
 			_user = new ChatUser(r_key, ChatUser.RECEIVER);
 			
@@ -254,6 +223,7 @@ package
 					//когда видео подключилось к сетевой группе - добавляем видео на экран
 					video_place = _user.getVideoScreen();
 					videoPlace.addChild ( video_place );
+					videoPlace.visible = true;
 				});
 			_user.addEventListener(ChatUser.VIDEO_CLOSE,
 				function()
